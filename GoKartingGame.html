@@ -1,0 +1,823 @@
+//Want some fun? Try this fun Go-Kart Game! You'll like it! Tweak it in your own way (Not here, of course!) to your likes! Enjoy!!
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Kart Racing Game with Difficulty Levels</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #581c87 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .game-container {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .hud-panel {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            background: #374151;
+            border-radius: 9999px;
+            height: 0.5rem;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.1s ease;
+        }
+        
+        .speed-fill {
+            background: linear-gradient(to right, #10b981, #fbbf24);
+        }
+        
+        .rpm-fill-green {
+            background: #10b981;
+        }
+        
+        .rpm-fill-yellow {
+            background: #f59e0b;
+        }
+        
+        .rpm-fill-red {
+            background: #ef4444;
+        }
+        
+        .transmission-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .auto-mode {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .manual-mode {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .game-canvas {
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            background: #374151;
+        }
+        
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+        }
+        
+        .btn {
+            padding: 0.75rem 2rem;
+            font-weight: bold;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            transform: scale(1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .btn-start {
+            background: linear-gradient(to right, #10b981, #3b82f6);
+            color: white;
+        }
+        
+        .btn-restart {
+            background: linear-gradient(to right, #ef4444, #f97316);
+            color: white;
+        }
+        
+        .difficulty-btn {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 2px solid;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .difficulty-btn.active {
+            border-color: white;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        .difficulty-btn:not(.active) {
+            border-color: #6b7280;
+            background: rgba(107, 114, 128, 0.5);
+            color: #d1d5db;
+        }
+        
+        .difficulty-btn:not(.active):hover {
+            border-color: #9ca3af;
+            background: rgba(156, 163, 175, 0.5);
+        }
+        
+        .icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .trophy-icon {
+            color: #fbbf24;
+        }
+        
+        .zap-icon {
+            color: #fbbf24;
+        }
+        
+        .settings-icon {
+            color: white;
+        }
+        
+        .gauge-icon {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h1 style="font-size: 1.875rem; font-weight: bold; color: white; display: flex; align-items: center; gap: 0.75rem; margin: 0;">
+                <svg class="icon zap-icon" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+                Go Kart Racing
+            </h1>
+            <div style="display: flex; align-items: center; gap: 1rem; color: white;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg class="icon trophy-icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M7 4V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2h4a1 1 0 0 1 1 1v5a3 3 0 0 1-3 3h-1.1a7.001 7.001 0 0 1-13.8 0H3a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1h4zm2-1v1h6V3H9zm10 3H5v3a1 1 0 0 0 1 1h1.1a7.001 7.001 0 0 1 9.8 0H18a1 1 0 0 0 1-1V6z"/>
+                    </svg>
+                    <span id="score" style="font-family: monospace; font-size: 1.125rem;">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 1.5rem;">
+            <div style="position: relative;">
+                <canvas id="gameCanvas" class="game-canvas" width="800" height="600"></canvas>
+                
+                <div id="startOverlay" class="overlay">
+                    <h2 style="font-size: 2.25rem; font-weight: bold; margin-bottom: 1rem;">Ready to Race?</h2>
+                    <p style="color: #d1d5db; margin-bottom: 1.5rem; max-width: 28rem;">
+                        Use arrow keys or WASD to control your kart.<br/>
+                        Press 'A' for automatic, 'M' for manual transmission.<br/>
+                        In manual mode, use keys 1-6 to shift gears.
+                    </p>
+                    <button id="startBtn" class="btn btn-start">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Start Race
+                    </button>
+                </div>
+                
+                <div id="gameOverOverlay" class="overlay" style="display: none;">
+                    <h2 style="font-size: 2.25rem; font-weight: bold; color: #f87171; margin-bottom: 1rem;">Race Over!</h2>
+                    <p style="color: #d1d5db; margin-bottom: 0.5rem;">Final Score: <span id="finalScore" style="color: white; font-weight: bold;">0</span></p>
+                    <p style="color: #9ca3af; margin-bottom: 1.5rem;">You crashed into an obstacle!</p>
+                    <button id="restartBtn" class="btn btn-restart">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M1 4v6h6M23 20v-6h-6"/>
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                        </svg>
+                        Race Again
+                    </button>
+                </div>
+                
+                <div id="pauseOverlay" class="overlay" style="display: none; background: rgba(0, 0, 0, 0.4);">
+                    <h2 style="font-size: 1.875rem; font-weight: bold; margin-bottom: 1rem;">Paused</h2>
+                    <p style="color: #d1d5db;">Press Space to continue</p>
+                </div>
+            </div>
+            
+            <div style="width: 16rem;">
+                <!-- Dashboard -->
+                <div class="hud-panel">
+                    <h3 style="color: white; font-weight: bold; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg class="icon settings-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        Dashboard
+                    </h3>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: #d1d5db; margin-bottom: 0.25rem;">
+                            <span>Speed</span>
+                            <span id="speedDisplay">0 km/h</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="speedBar" class="progress-fill speed-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: #d1d5db; margin-bottom: 0.25rem;">
+                            <span>RPM</span>
+                            <span id="rpmDisplay">800</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="rpmBar" class="progress-fill rpm-fill-green" style="width: 16%"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="color: #d1d5db; font-size: 0.875rem;">Transmission</span>
+                        <span id="transmissionMode" class="transmission-badge auto-mode">AUTOMATIC</span>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #d1d5db; font-size: 0.875rem;">Gear</span>
+                        <span id="gearDisplay" style="color: white; font-family: monospace; font-size: 1.125rem; font-weight: bold;">1</span>
+                    </div>
+                </div>
+
+                <!-- Difficulty Selector -->
+                <div class="hud-panel">
+                    <h3 style="color: white; font-weight: bold; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg class="icon gauge-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        Difficulty
+                    </h3>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <button class="difficulty-btn active" data-difficulty="easy" style="border-color: #10b981;">
+                            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                <div style="width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #10b981;"></div>
+                                Easy
+                            </div>
+                            <div style="font-size: 0.75rem; opacity: 0.75;">+0 km/h</div>
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="medium" style="border-color: #f59e0b;">
+                            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                <div style="width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #f59e0b;"></div>
+                                Medium
+                            </div>
+                            <div style="font-size: 0.75rem; opacity: 0.75;">+30 km/h</div>
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="hard" style="border-color: #ef4444;">
+                            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                <div style="width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #ef4444;"></div>
+                                Hard
+                            </div>
+                            <div style="font-size: 0.75rem; opacity: 0.75;">+60 km/h</div>
+                        </button>
+                        <button class="difficulty-btn" data-difficulty="expert" style="border-color: #8b5cf6;">
+                            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                <div style="width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #8b5cf6;"></div>
+                                Expert
+                            </div>
+                            <div style="font-size: 0.75rem; opacity: 0.75;">+90 km/h</div>
+                        </button>
+                    </div>
+                    
+                    <div style="padding: 0.5rem; background: rgba(107, 114, 128, 0.5); border-radius: 0.25rem; border: 1px solid #6b7280;">
+                        <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.25rem;">Current Level:</div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="currentDifficultyDot" style="width: 0.75rem; height: 0.75rem; border-radius: 50%; background: #10b981;"></div>
+                            <span id="currentDifficultyName" style="color: white; font-weight: 500;">Easy</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
+                            Score Multiplier: <span id="currentMultiplier">1</span>x
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Controls -->
+                <div class="hud-panel">
+                    <h3 style="color: white; font-weight: bold; margin-bottom: 0.75rem;">Controls</h3>
+                    <div style="font-size: 0.875rem; color: #d1d5db; line-height: 1.5;">
+                        <div>↑/W - Accelerate</div>
+                        <div>↓/S - Brake/Reverse</div>
+                        <div>←→/AD - Steer</div>
+                        <div>A - Automatic Mode</div>
+                        <div>M - Manual Mode</div>
+                        <div>1-6 - Shift Gears (Manual)</div>
+                        <div>Space - Pause</div>
+                    </div>
+                </div>
+                
+                <!-- Tips -->
+                <div class="hud-panel">
+                    <h3 style="color: white; font-weight: bold; margin-bottom: 0.75rem;">Racing Tips</h3>
+                    <div style="font-size: 0.75rem; color: #9ca3af; line-height: 1.4;">
+                        <div>• Stay in your lane to avoid obstacles</div>
+                        <div>• Higher gears = higher top speed</div>
+                        <div>• Use manual for better control</div>
+                        <div>• Avoid redlining the engine</div>
+                        <div>• Higher difficulty = more rewards</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class GoKartGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.keys = {};
+                
+                this.gameState = {
+                    isPlaying: false,
+                    isPaused: false,
+                    score: 0,
+                    gameOver: false,
+                    difficulty: 'easy',
+                };
+                
+                this.transmission = 'automatic';
+                this.currentGear = 1;
+                this.rpm = 800;
+                this.speed = 0;
+                
+                this.kart = {
+                    x: 0,
+                    y: 0,
+                    width: 40,
+                    height: 60,
+                    speed: 0,
+                    angle: 0,
+                    maxSpeed: 8,
+                    acceleration: 0.3,
+                    deceleration: 0.2,
+                };
+                
+                this.obstacles = [];
+                this.roadOffset = 0;
+                this.lastObstacleSpawn = 0;
+                
+                this.CANVAS_WIDTH = 800;
+                this.CANVAS_HEIGHT = 600;
+                this.ROAD_WIDTH = 400;
+                
+                this.gearRatios = {
+                    1: { minSpeed: 0, maxSpeed: 2, rpmRange: [800, 2500] },
+                    2: { minSpeed: 1.5, maxSpeed: 4, rpmRange: [1000, 3000] },
+                    3: { minSpeed: 3, maxSpeed: 6, rpmRange: [1200, 3500] },
+                    4: { minSpeed: 5, maxSpeed: 8, rpmRange: [1400, 4000] },
+                    5: { minSpeed: 7, maxSpeed: 10, rpmRange: [1600, 4500] },
+                    6: { minSpeed: 9, maxSpeed: 12, rpmRange: [1800, 5000] },
+                };
+                
+                this.difficultySettings = {
+                    easy: {
+                        name: 'Easy',
+                        color: '#10b981',
+                        speedMultiplier: 1,
+                        obstacleFrequency: 3000,
+                        maxObstacleSpeed: 3,
+                        scoreMultiplier: 1,
+                    },
+                    medium: {
+                        name: 'Medium',
+                        color: '#f59e0b',
+                        speedMultiplier: 1.5,
+                        obstacleFrequency: 2200,
+                        maxObstacleSpeed: 4,
+                        scoreMultiplier: 1.5,
+                    },
+                    hard: {
+                        name: 'Hard',
+                        color: '#ef4444',
+                        speedMultiplier: 2,
+                        obstacleFrequency: 1800,
+                        maxObstacleSpeed: 5,
+                        scoreMultiplier: 2,
+                    },
+                    expert: {
+                        name: 'Expert',
+                        color: '#8b5cf6',
+                        speedMultiplier: 2.5,
+                        obstacleFrequency: 1400,
+                        maxObstacleSpeed: 6,
+                        scoreMultiplier: 3,
+                    },
+                };
+                
+                this.obstacleTypes = [
+                    { type: 'cone', color: '#f56565' },
+                    { type: 'barrel', color: '#ed8936' },
+                    { type: 'tire', color: '#1a202c' },
+                ];
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.updateHUD();
+                this.updateDifficultyDisplay();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('startBtn').addEventListener('click', () => this.startGame());
+                document.getElementById('restartBtn').addEventListener('click', () => this.startGame());
+                
+                // Difficulty buttons
+                document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const difficulty = btn.dataset.difficulty;
+                        this.changeDifficulty(difficulty);
+                    });
+                });
+                
+                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+                document.addEventListener('keyup', (e) => this.handleKeyUp(e));
+            }
+            
+            changeDifficulty(difficulty) {
+                this.gameState.difficulty = difficulty;
+                
+                // Update active button
+                document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-difficulty="${difficulty}"]`).classList.add('active');
+                
+                this.updateDifficultyDisplay();
+            }
+            
+            updateDifficultyDisplay() {
+                const currentDifficulty = this.difficultySettings[this.gameState.difficulty];
+                document.getElementById('currentDifficultyDot').style.backgroundColor = currentDifficulty.color;
+                document.getElementById('currentDifficultyName').textContent = currentDifficulty.name;
+                document.getElementById('currentMultiplier').textContent = currentDifficulty.scoreMultiplier;
+            }
+            
+            startGame() {
+                this.kart.x = this.canvas.width / 2 - this.kart.width / 2;
+                this.kart.y = this.canvas.height - 120;
+                this.kart.speed = 0;
+                this.kart.angle = 0;
+                
+                this.obstacles = [];
+                this.roadOffset = 0;
+                this.lastObstacleSpawn = 0;
+                
+                this.gameState = {
+                    isPlaying: true,
+                    isPaused: false,
+                    score: 0,
+                    gameOver: false,
+                    difficulty: this.gameState.difficulty,
+                };
+                
+                this.currentGear = 1;
+                this.rpm = 800;
+                this.speed = 0;
+                
+                document.getElementById('startOverlay').style.display = 'none';
+                document.getElementById('gameOverOverlay').style.display = 'none';
+                document.getElementById('pauseOverlay').style.display = 'none';
+                
+                this.gameLoop();
+            }
+            
+            handleKeyDown(e) {
+                this.keys[e.key] = true;
+                
+                if (e.key === 'a' || e.key === 'A') {
+                    this.transmission = 'automatic';
+                } else if (e.key === 'm' || e.key === 'M') {
+                    this.transmission = 'manual';
+                }
+                
+                if (this.transmission === 'manual') {
+                    const gearNumber = parseInt(e.key);
+                    if (gearNumber >= 1 && gearNumber <= 6) {
+                        this.currentGear = gearNumber;
+                    }
+                }
+                
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    if (this.gameState.isPlaying) {
+                        this.gameState.isPaused = !this.gameState.isPaused;
+                        document.getElementById('pauseOverlay').style.display = 
+                            this.gameState.isPaused ? 'flex' : 'none';
+                    }
+                }
+            }
+            
+            handleKeyUp(e) {
+                this.keys[e.key] = false;
+            }
+            
+            drawRoad() {
+                const roadStartX = (this.canvas.width - this.ROAD_WIDTH) / 2;
+                
+                // Road background
+                this.ctx.fillStyle = '#2a2a2a';
+                this.ctx.fillRect(roadStartX, 0, this.ROAD_WIDTH, this.canvas.height);
+                
+                // Road edges
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(roadStartX - 4, 0, 4, this.canvas.height);
+                this.ctx.fillRect(roadStartX + this.ROAD_WIDTH, 0, 4, this.canvas.height);
+                
+                // Dotted yellow center line
+                this.ctx.fillStyle = '#fbbf24';
+                const centerX = roadStartX + this.ROAD_WIDTH / 2;
+                const dashLength = 30;
+                const gapLength = 20;
+                const totalPattern = dashLength + gapLength;
+                
+                for (let y = -this.roadOffset % totalPattern; y < this.canvas.height + totalPattern; y += totalPattern) {
+                    if (y >= -dashLength && y <= this.canvas.height) {
+                        this.ctx.fillRect(centerX - 2, y, 4, Math.min(dashLength, this.canvas.height - y));
+                    }
+                }
+            }
+            
+            drawKart() {
+                this.ctx.save();
+                this.ctx.translate(this.kart.x + this.kart.width / 2, this.kart.y + this.kart.height / 2);
+                this.ctx.rotate(this.kart.angle);
+                
+                // Kart body with gradient
+                const gradient = this.ctx.createLinearGradient(-this.kart.width / 2, -this.kart.height / 2, this.kart.width / 2, this.kart.height / 2);
+                gradient.addColorStop(0, '#ef4444');
+                gradient.addColorStop(1, '#dc2626');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(-this.kart.width / 2, -this.kart.height / 2, this.kart.width, this.kart.height);
+                
+                // Kart details
+                this.ctx.fillStyle = '#1f2937';
+                this.ctx.fillRect(-this.kart.width / 2 + 5, -this.kart.height / 2 + 5, this.kart.width - 10, 15);
+                
+                // Racing stripes
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(-this.kart.width / 2 + 8, -this.kart.height / 2 + 2, 4, this.kart.height - 4);
+                this.ctx.fillRect(this.kart.width / 2 - 12, -this.kart.height / 2 + 2, 4, this.kart.height - 4);
+                
+                // Wheels
+                this.ctx.fillStyle = '#374151';
+                this.ctx.fillRect(-this.kart.width / 2 - 3, -this.kart.height / 2 + 8, 6, 12);
+                this.ctx.fillRect(this.kart.width / 2 - 3, -this.kart.height / 2 + 8, 6, 12);
+                this.ctx.fillRect(-this.kart.width / 2 - 3, this.kart.height / 2 - 20, 6, 12);
+                this.ctx.fillRect(this.kart.width / 2 - 3, this.kart.height / 2 - 20, 6, 12);
+                
+                this.ctx.restore();
+            }
+            
+            drawObstacles() {
+                this.obstacles.forEach(obstacle => {
+                    this.ctx.save();
+                    
+                    if (obstacle.type === 'cone') {
+                        this.ctx.fillStyle = obstacle.color;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(obstacle.x + obstacle.width / 2, obstacle.y);
+                        this.ctx.lineTo(obstacle.x, obstacle.y + obstacle.height);
+                        this.ctx.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height);
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                        
+                        // Cone stripes
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.fillRect(obstacle.x + 2, obstacle.y + obstacle.height - 15, obstacle.width - 4, 3);
+                        this.ctx.fillRect(obstacle.x + 2, obstacle.y + obstacle.height - 25, obstacle.width - 4, 3);
+                    } else if (obstacle.type === 'barrel') {
+                        this.ctx.fillStyle = obstacle.color;
+                        this.ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                        this.ctx.fillStyle = '#6b7280';
+                        this.ctx.fillRect(obstacle.x + 2, obstacle.y + 5, obstacle.width - 4, 3);
+                        this.ctx.fillRect(obstacle.x + 2, obstacle.y + obstacle.height - 8, obstacle.width - 4, 3);
+                    } else {
+                        // Tire
+                        this.ctx.fillStyle = obstacle.color;
+                        this.ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                        this.ctx.fillStyle = '#4b5563';
+                        this.ctx.beginPath();
+                        this.ctx.arc(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2, obstacle.width / 3, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    
+                    this.ctx.restore();
+                });
+            }
+            
+            spawnObstacle() {
+                const now = Date.now();
+                const difficultyConfig = this.difficultySettings[this.gameState.difficulty];
+                
+                if (now - this.lastObstacleSpawn < difficultyConfig.obstacleFrequency) return;
+                
+                const roadStartX = (this.canvas.width - this.ROAD_WIDTH) / 2;
+                const laneWidth = this.ROAD_WIDTH / 3;
+                const lane = Math.floor(Math.random() * 3);
+                
+                const obstacleType = this.obstacleTypes[Math.floor(Math.random() * this.obstacleTypes.length)];
+                
+                this.obstacles.push({
+                    x: roadStartX + lane * laneWidth + laneWidth / 2 - 15,
+                    y: -40,
+                    width: 30,
+                    height: 35,
+                    speed: 3 + Math.random() * difficultyConfig.maxObstacleSpeed,
+                    type: obstacleType.type,
+                    color: obstacleType.color,
+                });
+                
+                this.lastObstacleSpawn = now;
+            }
+            
+            updateObstacles() {
+                this.obstacles = this.obstacles.filter(obstacle => {
+                    obstacle.y += obstacle.speed + Math.abs(this.kart.speed);
+                    return obstacle.y < this.CANVAS_HEIGHT + 50;
+                });
+            }
+            
+            checkCollisions() {
+                for (const obstacle of this.obstacles) {
+                    if (
+                        this.kart.x < obstacle.x + obstacle.width &&
+                        this.kart.x + this.kart.width > obstacle.x &&
+                        this.kart.y < obstacle.y + obstacle.height &&
+                        this.kart.y + this.kart.height > obstacle.y
+                    ) {
+                        this.gameState.gameOver = true;
+                        this.gameState.isPlaying = false;
+                        document.getElementById('finalScore').textContent = this.gameState.score;
+                        document.getElementById('gameOverOverlay').style.display = 'flex';
+                        return;
+                    }
+                }
+            }
+            
+            updateTransmission() {
+                const currentSpeed = Math.abs(this.kart.speed);
+                const difficultyConfig = this.difficultySettings[this.gameState.difficulty];
+                
+                if (this.transmission === 'automatic') {
+                    let newGear = 1;
+                    for (let gear = 1; gear <= 6; gear++) {
+                        const ratio = this.gearRatios[gear];
+                        const adjustedMaxSpeed = ratio.maxSpeed * difficultyConfig.speedMultiplier;
+                        if (currentSpeed >= ratio.minSpeed && currentSpeed <= adjustedMaxSpeed) {
+                            newGear = gear;
+                        }
+                    }
+                    this.currentGear = newGear;
+                }
+                
+                const gearData = this.gearRatios[this.currentGear];
+                const adjustedMaxSpeed = gearData.maxSpeed * difficultyConfig.speedMultiplier;
+                const speedRatio = Math.min(currentSpeed / adjustedMaxSpeed, 1);
+                const rpmRange = gearData.rpmRange[1] - gearData.rpmRange[0];
+                this.rpm = Math.round(gearData.rpmRange[0] + (speedRatio * rpmRange));
+                
+                this.kart.maxSpeed = adjustedMaxSpeed;
+            }
+            
+            updateKart() {
+                const roadStartX = (this.canvas.width - this.ROAD_WIDTH) / 2;
+                
+                if (this.keys['ArrowUp'] || this.keys['w'] || this.keys['W']) {
+                    this.kart.speed = Math.min(this.kart.speed + this.kart.acceleration, this.kart.maxSpeed);
+                } else if (this.keys['ArrowDown'] || this.keys['s'] || this.keys['S']) {
+                    this.kart.speed = Math.max(this.kart.speed - this.kart.deceleration * 2, -this.kart.maxSpeed * 0.5);
+                } else {
+                    this.kart.speed *= 0.95;
+                }
+                
+                if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A']) {
+                    if (Math.abs(this.kart.speed) > 0.5) {
+                        this.kart.angle -= 0.05 * (Math.abs(this.kart.speed) / this.kart.maxSpeed);
+                        this.kart.x = Math.max(roadStartX + 10, this.kart.x - 3);
+                    }
+                }
+                if (this.keys['ArrowRight'] || this.keys['d'] || this.keys['D']) {
+                    if (Math.abs(this.kart.speed) > 0.5) {
+                        this.kart.angle += 0.05 * (Math.abs(this.kart.speed) / this.kart.maxSpeed);
+                        this.kart.x = Math.min(roadStartX + this.ROAD_WIDTH - this.kart.width - 10, this.kart.x + 3);
+                    }
+                }
+                
+                this.kart.x = Math.max(roadStartX + 5, Math.min(roadStartX + this.ROAD_WIDTH - this.kart.width - 5, this.kart.x));
+                this.kart.angle *= 0.9;
+                
+                this.speed = Math.abs(this.kart.speed);
+                
+                if (this.kart.speed > 0) {
+                    const difficultyConfig = this.difficultySettings[this.gameState.difficulty];
+                    const scoreIncrease = Math.floor(this.kart.speed * 10 * difficultyConfig.scoreMultiplier);
+                    this.gameState.score += scoreIncrease;
+                }
+                
+                this.roadOffset += this.kart.speed * 2;
+            }
+            
+            updateHUD() {
+                document.getElementById('score').textContent = this.gameState.score;
+                document.getElementById('speedDisplay').textContent = Math.round(this.speed * 20) + ' km/h';
+                document.getElementById('rpmDisplay').textContent = this.rpm;
+                document.getElementById('gearDisplay').textContent = this.currentGear;
+                
+                const transmissionBadge = document.getElementById('transmissionMode');
+                transmissionBadge.textContent = this.transmission.toUpperCase();
+                transmissionBadge.className = `transmission-badge ${this.transmission === 'automatic' ? 'auto-mode' : 'manual-mode'}`;
+                
+                const speedBar = document.getElementById('speedBar');
+                const speedPercentage = Math.min((this.speed / 12) * 100, 100);
+                speedBar.style.width = speedPercentage + '%';
+                
+                const rpmBar = document.getElementById('rpmBar');
+                const rpmPercentage = Math.min((this.rpm / 5000) * 100, 100);
+                rpmBar.style.width = rpmPercentage + '%';
+                rpmBar.className = `progress-fill ${
+                    this.rpm > 4000 ? 'rpm-fill-red' : this.rpm > 3000 ? 'rpm-fill-yellow' : 'rpm-fill-green'
+                }`;
+            }
+            
+            gameLoop() {
+                if (!this.gameState.isPlaying || this.gameState.isPaused) return;
+                
+                // Clear canvas
+                this.ctx.fillStyle = '#1f2937';
+                this.ctx.fillRect(0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
+                
+                this.updateKart();
+                this.updateTransmission();
+                this.spawnObstacle();
+                this.updateObstacles();
+                this.checkCollisions();
+                
+                this.drawRoad();
+                this.drawObstacles();
+                this.drawKart();
+                
+                this.updateHUD();
+                
+                if (this.gameState.isPlaying) {
+                    requestAnimationFrame(() => this.gameLoop());
+                }
+            }
+        }
+        
+        // Initialize the game when the page loads
+        window.addEventListener('load', () => {
+            new GoKartGame();
+        });
+    </script>
+</body>
+</html>
